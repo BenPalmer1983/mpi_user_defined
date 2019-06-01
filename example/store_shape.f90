@@ -2,12 +2,9 @@ MODULE store_shape
 
 USE kinds
 USE shape_type, ONLY: tshape
+USE mpi
 
 IMPLICIT NONE
-
-! Include MPI header
-INCLUDE 'mpif.h'
-
 
 CONTAINS
 

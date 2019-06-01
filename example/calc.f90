@@ -4,11 +4,9 @@ USE kinds
 USE shape_type, ONLY: tshape
 USE mpi_udgb, ONLY: run_gather, run_broadcast
 USE store_shape, ONLY: store_before, store_after
+USE mpi
 
 IMPLICIT NONE
-
-! Include MPI header
-INCLUDE 'mpif.h'
 
 
 CONTAINS

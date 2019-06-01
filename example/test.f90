@@ -4,11 +4,9 @@ PROGRAM test
 USE kinds
 USE calc, ONLY: run_calc
 USE shape_type, ONLY: tshape
+USE mpi
 
 IMPLICIT NONE
-
-! Include MPI header
-Include 'mpif.h'
 
 CALL main()
 

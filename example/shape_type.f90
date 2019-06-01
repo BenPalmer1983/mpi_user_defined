@@ -4,9 +4,6 @@ USE kinds
 
 IMPLICIT NONE
 
-! Include MPI header
-INCLUDE 'mpif.h'
-
 TYPE tshape
 INTEGER(kind=StandardInteger) :: sides = 0
 REAL(kind=DoubleReal), ALLOCATABLE, DIMENSION(:) :: lengths

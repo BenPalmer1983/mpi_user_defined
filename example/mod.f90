@@ -22,11 +22,9 @@ MODULE mpi_udgb
 
 USE kinds
 USE shape_type, ONLY: tshape
+USE mpi
 
 IMPLICIT NONE
-
-! Include MPI header
-INCLUDE 'mpif.h'
 
 
 INTEGER(kind=StandardInteger), ALLOCATABLE, DIMENSION(:) :: bheader        ! HEADER DATA

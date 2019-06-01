@@ -108,11 +108,9 @@ MODULE {{module_name}}
 
 USE kinds
 USE {{type_module}}, ONLY: {{type_name}}
+USE mpi
 
 IMPLICIT NONE
-
-! Include MPI header
-INCLUDE 'mpif.h'
 
 
 INTEGER(kind=StandardInteger), ALLOCATABLE, DIMENSION(:) :: bheader        ! HEADER DATA
