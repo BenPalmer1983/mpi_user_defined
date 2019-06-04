@@ -390,8 +390,9 @@ DO loop = 1,3
   END IF
           
   ! LOOP OVER ELEMENTS IN ARR
-  dppos = 1
-  lpos = 1
+  print *,"SIZE ", size(arr, 1) 
+      dppos = 1
+    lpos = 1
   DO n = 1, size(arr, 1)
     IF(loop .EQ. 2)THEN
       ecounter = ecounter + 1
@@ -424,7 +425,8 @@ DO loop = 1,3
     ALLOCATE(blogical(1:bheader(3)))
     bint = 0
     bdp = 0.0D0
-    blogical = .TRUE.     
+    blogical = .TRUE.    
+    print *, bheader(:)   
   END IF
   
   ! SEND BUFFER HEADER TO ROOT      
@@ -434,6 +436,7 @@ DO loop = 1,3
   
   ! ON WORKER: ALLOCATE BUFFERS
   IF((proc_id .NE. 0) .AND. (loop .EQ. 1))THEN
+    print *, bheader(:)
     CALL deallocate_arrays()
     ALLOCATE(bint(1:bheader(1)))
     ALLOCATE(bdp(1:bheader(2)))

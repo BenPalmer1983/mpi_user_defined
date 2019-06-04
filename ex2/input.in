@@ -1,0 +1,65 @@
+#outfile       config.mpi_uddt.f90
+#type_module   config
+#type_name     t_config
+#module        mpi_udgb
+#bsubroutine    run_broadcast_config
+#gsubroutine    run_gather_config
+
+
+
+
+
+TYPE :: t_config
+! MPI
+!INTEGER(KIND=StandardInteger) :: proc_id
+!INTEGER(KIND=StandardInteger) :: proc_count
+
+! ID
+INTEGER(kind=StandardInteger) :: config = 0
+
+! OPTIONS
+INTEGER(kind=StandardInteger) :: e = 0    ! compare energy  
+INTEGER(kind=StandardInteger) :: f = 0    ! calc + compare forces
+INTEGER(kind=StandardInteger) :: s = 0    ! calc + compare stresses
+
+! PRIMITIVE
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: prim_uv
+REAL(kind=DoubleReal) :: prim_alat
+INTEGER(kind=StandardInteger) :: prim_counter = 0
+INTEGER(kind=StandardInteger), DIMENSION(:), ALLOCATABLE :: prim_labels
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: prim_coords
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: prim_forces
+
+! EXPANDED
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: uv
+REAL(kind=DoubleReal) :: alat
+INTEGER(kind=StandardInteger) :: counter = 0
+INTEGER(kind=StandardInteger), DIMENSION(:), ALLOCATABLE :: labels
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: coords_crystal
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: coords_cartesian
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: forces
+
+! ENERGY
+REAL(kind=DoubleReal) :: energy = 0.0
+
+! STRESS
+REAL(kind=DoubleReal), DIMENSION(:, :), ALLOCATABLE :: stress
+
+! CENTER
+REAL(kind=DoubleReal), DIMENSION(:), ALLOCATABLE :: center_crystal
+REAL(kind=DoubleReal), DIMENSION(:), ALLOCATABLE :: center_cartesian
+
+! RCUT
+REAL(kind=DoubleReal) :: rcut = 0.0D0
+REAL(kind=DoubleReal) :: rverlet = 0.0D0
+REAL(kind=DoubleReal) :: rcutsq = 0.0D0
+REAL(kind=DoubleReal) :: rverletsq = 0.0D0
+
+! MISC
+REAL(kind=DoubleReal) :: volume = 0.0D0
+REAL(kind=DoubleReal) :: volume_m3 = 0.0D0
+REAL(kind=DoubleReal) :: nd = 0.0D0
+REAL(kind=DoubleReal) :: nd_m3 = 0.0D0
+
+
+END TYPE t_config

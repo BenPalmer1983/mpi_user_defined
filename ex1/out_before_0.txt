@@ -1,0 +1,56 @@
+ SHAPE            1
+ sides:            3
+ len            1 :   0.80380552047952203     
+ len            2 :   0.35249806832347486     
+ len            3 :   0.99809236009560809     
+ perimeter:    2.1543959488986051     
+ 
+ SHAPE            2
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 
+ SHAPE            3
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 
+ SHAPE            4
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 
+ SHAPE            5
+ sides:            3
+ len            1 :   0.86538913610051127     
+ len            2 :   0.87124440420215110     
+ len            3 :   0.28875682207028297     
+ perimeter:    2.0253903623729457     
+ 
+ SHAPE            6
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 
+ SHAPE            7
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 
+ SHAPE            8
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 
+ SHAPE            9
+ sides:            2
+ len            1 :    1.9293483351192742E-002
+ len            2 :   0.89061826790930188     
+ perimeter:   0.90991175126049462     
+ 
+ SHAPE           10
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 
+ SHAPE           11
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 
+ SHAPE           12
+ sides:            0
+ perimeter:    0.0000000000000000     
+ 

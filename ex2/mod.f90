@@ -1,89 +1,3 @@
-import textwrap
-
-
-
-
-def main():
-  
-  print("Making Fortran Files")
-
-  type, outfile, type_module, type_name, module_name, bsubroutine, gsubroutine = read_file()
-  pup_g, pup_b = pup_subroutines(type)
-  code = data()
-  code = code.replace("{{module_name}}", module_name) 
-  code = code.replace("{{type_module}}", type_module)  
-  code = code.replace("{{type_name}}", type_name)
-  code = code.replace("{{bsubroutine}}", bsubroutine)  
-  code = code.replace("{{gsubroutine}}", gsubroutine)
-  code = code.replace("{{pup_g}}", pup_g)
-  code = code.replace("{{pup_b}}", pup_b)
-
-  fh = open("mod.f90", 'w')
-  fh.write(code)
-  fh.close()
-
-
-def read_file():
-  outfile = ""
-  type_module = ""
-  type_name = ""  
-  module_name = ""
-  bsubroutine = ""
-  gsubroutine = ""
-  type = ""
-
-  file_in = "input.in"
-  fh = open(file_in, "r")
-  for line in fh:
-    line = line.strip()
-    if(line.upper()[0:8] == "#OUTFILE"):
-      arr = line.split(" ")
-      outfile = arr[-1]
-    elif(line.upper()[0:12] == "#TYPE_MODULE"):  
-      arr = line.split(" ")
-      type_module = arr[-1]
-    elif(line.upper()[0:10] == "#TYPE_NAME"):  
-      arr = line.split(" ")
-      type_name = arr[-1]
-    elif(line.upper()[0:7] == "#MODULE"):  
-      arr = line.split(" ")
-      module_name = arr[-1]
-    elif(line.upper()[0:12] == "#BSUBROUTINE"):  
-      arr = line.split(" ")
-      bsubroutine = arr[-1]
-    elif(line.upper()[0:12] == "#GSUBROUTINE"):  
-      arr = line.split(" ")
-      gsubroutine = arr[-1]
-    else:
-      type = type + line + "\n"
-  fh.close()
-  
-  return type, outfile, type_module, type_name, module_name, bsubroutine, gsubroutine
-
-def pup_subroutines(type):
-  output_g = ""
-  output_b = ""
-  
-  type = type.strip()
-  type = type.split("\n")
-
-  for i in range(len(type)):
-    line = type[i].strip()
-    if(line[0:4].upper() != "TYPE"):
-      arr = line.split("::")
-      if(len(arr) == 2):
-        temp_arr = arr[1].split("=")
-        item = temp_arr[0].strip()
-        output_g += "          CALL pup_g(arr(n)%" + item + ", loop) \n"
-        output_b += "          CALL pup_b(arr(n)%" + item + ", loop) \n"
-  return output_g, output_b
-
-
-
-
-def data():
-  
-  module = textwrap.dedent("""\
 !######################################################################
 !#                               GATHER
 !#          
@@ -104,10 +18,10 @@ def data():
 !######################################################################
 
 
-MODULE {{module_name}}
+MODULE mpi_udgb
 
 USE kinds
-USE {{type_module}}, ONLY: {{type_name}}
+USE config, ONLY: t_config
 USE mpi
 
 IMPLICIT NONE
@@ -147,9 +61,9 @@ END INTERFACE pup_b
 
 CONTAINS
 
-SUBROUTINE {{gsubroutine}}(arr)
+SUBROUTINE run_gather_config(arr)
 !###########################################################################
-TYPE({{type_name}}), DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: arr
+TYPE(t_config), DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: arr
 !###########################################################################
 INTEGER(kind=StandardInteger) :: n, m, loop
 INTEGER(kind=StandardInteger) :: tag, error
@@ -171,28 +85,28 @@ ALLOCATE(bheader(1:3))
 
 ! LOOP THROUGH WORKERS
 DO worker_id = 1, proc_count-1
-  
+
   ! IF THIS WORKER OR ROOT
   IF((proc_id .EQ. 0) .OR. (proc_id .EQ. worker_id))THEN
 
     ! ROOT AND WORKER:  RESET BUFFER HEADER
 
-    
+
     intcount = 0 
     dpcount = 0 
     lcount = 0 
-    
+
     ! Loop 1 calc size of buffers
     ! Loop 2 pack and send from worker    
     ! Loop 3 receive by root       
     DO loop = 1,3 
-          
+
       IF (loop .EQ. 1) THEN    
         bheader = 0  
         ecount = 0
         kcount = 0
       END IF  
-    
+
       IF (loop .EQ. 2 .AND. proc_id .EQ. worker_id) THEN
         ! ARRAY SIZE
         bint(1) = SIZE(arr,1)   ! STORE TOTAL NUMBER OF ELEMENTS
@@ -207,7 +121,7 @@ DO worker_id = 1, proc_count-1
           END IF
         END DO           
       END IF      
-    
+
       ! ON WORKER:  
       IF (loop .EQ. 1 .AND. proc_id .EQ. worker_id) THEN
         ! CALC HOW MANY ELEMENTS ARE BEING SENT
@@ -217,17 +131,17 @@ DO worker_id = 1, proc_count-1
           END IF
         END DO   
       END IF
-          
+
       IF((proc_id .EQ. 0) .AND. (loop .EQ. 3))THEN
         ecount = bint(2)  
         kcount = bint(3)        
       END IF
-      
+
       ! ON ROOT: SET POSITIONS
       IF((proc_id .EQ. 0) .AND. (loop .EQ. 3))THEN
         kpos = 3 + ecount
       END IF
-          
+
       ! LOOP OVER ELEMENTS IN ARR
       DO n = 1, size(arr, 1)
         IF (MOD((n - 1), proc_count) .EQ. worker_id) THEN
@@ -237,13 +151,44 @@ DO worker_id = 1, proc_count-1
 !############################################################################################
 !############################################################################################
 
-{{pup_g}}
+          CALL pup_g(arr(n)%proc_id, loop) 
+          CALL pup_g(arr(n)%proc_count, loop) 
+          CALL pup_g(arr(n)%config, loop) 
+          CALL pup_g(arr(n)%e, loop) 
+          CALL pup_g(arr(n)%f, loop) 
+          CALL pup_g(arr(n)%s, loop) 
+          CALL pup_g(arr(n)%prim_uv, loop) 
+          CALL pup_g(arr(n)%prim_alat, loop) 
+          CALL pup_g(arr(n)%prim_counter, loop) 
+          CALL pup_g(arr(n)%prim_labels, loop) 
+          CALL pup_g(arr(n)%prim_coords, loop) 
+          CALL pup_g(arr(n)%prim_forces, loop) 
+          CALL pup_g(arr(n)%uv, loop) 
+          CALL pup_g(arr(n)%alat, loop) 
+          CALL pup_g(arr(n)%counter, loop) 
+          CALL pup_g(arr(n)%labels, loop) 
+          CALL pup_g(arr(n)%coords_crystal, loop) 
+          CALL pup_g(arr(n)%coords_cartesian, loop) 
+          CALL pup_g(arr(n)%forces, loop) 
+          CALL pup_g(arr(n)%energy, loop) 
+          CALL pup_g(arr(n)%stress, loop) 
+          CALL pup_g(arr(n)%center_crystal, loop) 
+          CALL pup_g(arr(n)%center_cartesian, loop) 
+          CALL pup_g(arr(n)%rcut, loop) 
+          CALL pup_g(arr(n)%rverlet, loop) 
+          CALL pup_g(arr(n)%rcutsq, loop) 
+          CALL pup_g(arr(n)%rverletsq, loop) 
+          CALL pup_g(arr(n)%volume, loop) 
+          CALL pup_g(arr(n)%volume_m3, loop) 
+          CALL pup_g(arr(n)%nd, loop) 
+          CALL pup_g(arr(n)%nd_m3, loop) 
+
 
 !############################################################################################
 !############################################################################################
         END IF
       END DO
-      
+
       ! ON WORKER: ALLOCATE BUFFERS
       IF((proc_id .EQ. worker_id) .AND. (loop .EQ. 1))THEN
         CALL deallocate_arrays()
@@ -262,7 +207,7 @@ DO worker_id = 1, proc_count-1
         bdp = 0.0D0
         blogical = .TRUE.       
       END IF
-              
+
       ! SEND BUFFER HEADER TO ROOT      
       IF(loop .EQ. 1)THEN
         tag = 100 * worker_id + 1
@@ -272,7 +217,7 @@ DO worker_id = 1, proc_count-1
           CALL MPI_RECV(bheader, 3, MPI_INTEGER, worker_id, tag, MPI_comm_world, status, error)   
         END IF
       END IF
-      
+
       ! ON ROOT: ALLOCATE BUFFERS
       IF((proc_id .EQ. 0) .AND. (loop .EQ. 1))THEN
         CALL deallocate_arrays()
@@ -283,8 +228,8 @@ DO worker_id = 1, proc_count-1
         bdp = 0.0D0
         blogical = .TRUE.
       END IF
-      
-      
+
+
       ! SEND BUFFERS TO ROOT      
       IF(loop .EQ. 2)THEN
         IF (proc_id .GT. 0) THEN
@@ -307,7 +252,7 @@ DO worker_id = 1, proc_count-1
   END IF
 END DO
 
-END SUBROUTINE {{gsubroutine}}
+END SUBROUTINE run_gather_config
 
 
 
@@ -317,9 +262,9 @@ END SUBROUTINE {{gsubroutine}}
 
 
 
-SUBROUTINE {{bsubroutine}}(arr)
+SUBROUTINE run_broadcast_config(arr)
 !###########################################################################
-TYPE({{type_name}}), DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: arr
+TYPE(t_config), DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: arr
 !###########################################################################
 INTEGER(kind=StandardInteger) :: n, m, loop
 INTEGER(kind=StandardInteger) :: tag, error
@@ -341,22 +286,22 @@ ALLOCATE(bheader(1:3))
 
 
 ! ROOT AND WORKER:  RESET BUFFER HEADER
-  
+
 intcount = 0 
 dpcount = 0 
 lcount = 0 
-    
+
 ! Loop 1 calc size of buffers
 ! Loop 2 pack and broadcast from root    
 ! Loop 3 receive and unpack by workers
 DO loop = 1,3
-          
+
   IF (loop .EQ. 1) THEN    
     bheader = 0  
     ecount = 0
     kcount = 0
   END IF  
-  
+
   IF (loop .EQ. 2 .AND. proc_id .EQ. 0) THEN
     ! ARRAY SIZE
     bint(1) = SIZE(arr,1)   ! STORE TOTAL NUMBER OF ELEMENTS
@@ -369,7 +314,7 @@ DO loop = 1,3
       m  = m + 1
     END DO           
   END IF      
-    
+
   ! ON ROOT: COUNT ELEMENTS BEING SENT (ALL)  
   IF (loop .EQ. 1 .AND. proc_id .EQ. 0) THEN
     ! CALC HOW MANY ELEMENTS ARE BEING SENT
@@ -377,21 +322,22 @@ DO loop = 1,3
       ecount = ecount + 1
     END DO   
   END IF
-  
+
   ! ON WORKER: LOAD ECOUNT AND KCOUNT FROM BUFFER 
   IF((proc_id .NE. 0) .AND. (loop .EQ. 3))THEN
     ecount = bint(2)  
     kcount = bint(3)        
   END IF
-  
+
   ! ON WORKER: SET KEY POSITIONS
   IF((proc_id .NE. 0) .AND. (loop .EQ. 3))THEN
     kpos = 3 + ecount
   END IF
-          
+
   ! LOOP OVER ELEMENTS IN ARR
-  dppos = 1
-  lpos = 1
+  print *,"SIZE ", size(arr, 1) 
+      dppos = 1
+    lpos = 1
   DO n = 1, size(arr, 1)
     IF(loop .EQ. 2)THEN
       ecounter = ecounter + 1
@@ -399,15 +345,46 @@ DO loop = 1,3
 !############################################################################################
 !############################################################################################
 
-{{pup_b}}
+          CALL pup_b(arr(n)%proc_id, loop) 
+          CALL pup_b(arr(n)%proc_count, loop) 
+          CALL pup_b(arr(n)%config, loop) 
+          CALL pup_b(arr(n)%e, loop) 
+          CALL pup_b(arr(n)%f, loop) 
+          CALL pup_b(arr(n)%s, loop) 
+          CALL pup_b(arr(n)%prim_uv, loop) 
+          CALL pup_b(arr(n)%prim_alat, loop) 
+          CALL pup_b(arr(n)%prim_counter, loop) 
+          CALL pup_b(arr(n)%prim_labels, loop) 
+          CALL pup_b(arr(n)%prim_coords, loop) 
+          CALL pup_b(arr(n)%prim_forces, loop) 
+          CALL pup_b(arr(n)%uv, loop) 
+          CALL pup_b(arr(n)%alat, loop) 
+          CALL pup_b(arr(n)%counter, loop) 
+          CALL pup_b(arr(n)%labels, loop) 
+          CALL pup_b(arr(n)%coords_crystal, loop) 
+          CALL pup_b(arr(n)%coords_cartesian, loop) 
+          CALL pup_b(arr(n)%forces, loop) 
+          CALL pup_b(arr(n)%energy, loop) 
+          CALL pup_b(arr(n)%stress, loop) 
+          CALL pup_b(arr(n)%center_crystal, loop) 
+          CALL pup_b(arr(n)%center_cartesian, loop) 
+          CALL pup_b(arr(n)%rcut, loop) 
+          CALL pup_b(arr(n)%rverlet, loop) 
+          CALL pup_b(arr(n)%rcutsq, loop) 
+          CALL pup_b(arr(n)%rverletsq, loop) 
+          CALL pup_b(arr(n)%volume, loop) 
+          CALL pup_b(arr(n)%volume_m3, loop) 
+          CALL pup_b(arr(n)%nd, loop) 
+          CALL pup_b(arr(n)%nd_m3, loop) 
+
 
 !############################################################################################
 !############################################################################################
   END DO
-  
-  
-  
-  
+
+
+
+
   ! ON ROOT: ALLOCATE BUFFERS
   IF((proc_id .EQ. 0) .AND. (loop .EQ. 1))THEN
     CALL deallocate_arrays()
@@ -424,16 +401,18 @@ DO loop = 1,3
     ALLOCATE(blogical(1:bheader(3)))
     bint = 0
     bdp = 0.0D0
-    blogical = .TRUE.     
+    blogical = .TRUE.    
+    print *, bheader(:)   
   END IF
-  
+
   ! SEND BUFFER HEADER TO ROOT      
   IF(loop .EQ. 1)THEN
     CALL MPI_BCAST(bheader, 3, MPI_INTEGER, 0, MPI_COMM_WORLD, error) 
   END IF
-  
+
   ! ON WORKER: ALLOCATE BUFFERS
   IF((proc_id .NE. 0) .AND. (loop .EQ. 1))THEN
+    print *, bheader(:)
     CALL deallocate_arrays()
     ALLOCATE(bint(1:bheader(1)))
     ALLOCATE(bdp(1:bheader(2)))
@@ -442,18 +421,18 @@ DO loop = 1,3
     bdp = 0.0D0
     blogical = .TRUE.
   END IF
-  
-  
+
+
   ! SEND BUFFERS TO ROOT      
   IF (loop .EQ. 2) THEN  
     CALL MPI_BCAST(bint, bheader(1), MPI_INTEGER, 0, MPI_COMM_WORLD, error) 
     CALL MPI_BCAST(bdp, bheader(2), MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, error) 
     CALL MPI_BCAST(blogical, bheader(3), MPI_LOGICAL, 0, MPI_COMM_WORLD, error) 
   END IF
-  
+
 END DO
 
-END SUBROUTINE {{bsubroutine}}
+END SUBROUTINE run_broadcast_config
 
 
 
@@ -1131,16 +1110,7 @@ IF (ALLOCATED(blogical)) THEN
 END IF
 END SUBROUTINE deallocate_arrays
 
-END MODULE {{module_name}}
-
-
-
-""")
-
-  return module
-
-main()
-
+END MODULE mpi_udgb
 
 
 

@@ -1,0 +1,35 @@
+#outfile       config.mpi_uddt.f90
+#type_module   efs_type
+#type_name     t_efs
+#module        mpi_udgb
+#bsubroutine    run_broadcast_efs
+#gsubroutine    run_gather_efs
+
+
+
+
+TYPE :: t_efs
+
+!# Counter and flags
+INTEGER(KIND=StandardInteger) :: counter
+INTEGER(KIND=StandardInteger) :: proc_id
+INTEGER(KIND=StandardInteger) :: proc_count
+LOGICAL :: e_on = .TRUE.
+LOGICAL :: f_on = .TRUE.
+LOGICAL :: s_on = .TRUE.
+
+! DENS ARRAYS
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: density
+
+! EFS Results
+REAL(kind=DoubleReal) :: energy = 0.0D0
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: forces
+REAL(kind=DoubleReal), DIMENSION(:,:), ALLOCATABLE :: stress
+
+REAL(kind=DoubleReal) :: energy_pair = 0.0D0
+REAL(kind=DoubleReal) :: energy_embed = 0.0D0
+
+
+END TYPE t_efs
+
+END MODULE efs_type
