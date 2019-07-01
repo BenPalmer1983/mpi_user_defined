@@ -34,7 +34,9 @@ ELSE IF(proc_id .EQ. 3)THEN
 END IF
 
 DO n=1, size(shapes,1)
-  WRITE(fileid,*) "SHAPE ", n
+  WRITE(fileid,*) "========================================"
+  WRITE(fileid,*) "      SHAPE ", n
+  WRITE(fileid,*) "========================================"
   WRITE(fileid,*) "sides: ", shapes(n)%sides
   IF(ALLOCATED(shapes(n)%lengths))THEN
     DO m=1, size(shapes(n)%lengths,1)
@@ -42,12 +44,25 @@ DO n=1, size(shapes,1)
     END DO
   END IF
   WRITE(fileid,*) "perimeter: ", shapes(n)%perimeter
+  IF(ALLOCATED(shapes(n)%coords1))THEN
+    WRITE(fileid,*) "coords1_1:    ", shapes(n)%coords1(1,:)
+    WRITE(fileid,*) "coords1_1000: ", shapes(n)%coords1(1000,:)    
+  END IF
+  IF(ALLOCATED(shapes(n)%coords2))THEN
+    WRITE(fileid,*) "coords2_1:    ", shapes(n)%coords2(1,:)
+    WRITE(fileid,*) "coords2_1000: ", shapes(n)%coords2(1000,:)    
+  END IF
+  IF(ALLOCATED(shapes(n)%enddp))THEN
+    WRITE(fileid,*) "enddp:    ", shapes(n)%enddp(1,1)
+  END IF
   
+  WRITE(fileid,*) ""
   WRITE(fileid,*) ""
 END DO
 
 
 CLOSE(fileid)
+
 
 
 END SUBROUTINE store_before
@@ -78,7 +93,9 @@ ELSE IF(proc_id .EQ. 3)THEN
 END IF
 
 DO n=1, size(shapes,1)
-  WRITE(fileid,*) "SHAPE ", n
+  WRITE(fileid,*) "========================================"
+  WRITE(fileid,*) "      SHAPE ", n
+  WRITE(fileid,*) "========================================"
   WRITE(fileid,*) "sides: ", shapes(n)%sides
   IF(ALLOCATED(shapes(n)%lengths))THEN
     DO m=1, size(shapes(n)%lengths,1)
@@ -86,7 +103,19 @@ DO n=1, size(shapes,1)
     END DO
   END IF
   WRITE(fileid,*) "perimeter: ", shapes(n)%perimeter
+  IF(ALLOCATED(shapes(n)%coords1))THEN
+    WRITE(fileid,*) "coords1_1:    ", shapes(n)%coords1(1,:)
+    WRITE(fileid,*) "coords1_1000: ", shapes(n)%coords1(1000,:)    
+  END IF
+  IF(ALLOCATED(shapes(n)%coords2))THEN
+    WRITE(fileid,*) "coords2_1:    ", shapes(n)%coords2(1,:)
+    WRITE(fileid,*) "coords2_1000: ", shapes(n)%coords2(1000,:)    
+  END IF
+  IF(ALLOCATED(shapes(n)%enddp))THEN
+    WRITE(fileid,*) "enddp:    ", shapes(n)%enddp(1,1)
+  END IF
   
+  WRITE(fileid,*) ""
   WRITE(fileid,*) ""
 END DO
 

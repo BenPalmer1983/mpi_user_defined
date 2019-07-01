@@ -24,6 +24,7 @@ USE kinds
 USE shape_type, ONLY: tshape
 USE mpi
 
+
 IMPLICIT NONE
 
 
@@ -91,7 +92,6 @@ DO worker_id = 1, proc_count-1
 
     ! ROOT AND WORKER:  RESET BUFFER HEADER
 
-
     intcount = 0 
     dpcount = 0 
     lcount = 0 
@@ -150,14 +150,12 @@ DO worker_id = 1, proc_count-1
           END IF
 !############################################################################################
 !############################################################################################
-
           CALL pup_g(arr(n)%sides, loop) 
           CALL pup_g(arr(n)%lengths, loop) 
           CALL pup_g(arr(n)%int1d, loop) 
           CALL pup_g(arr(n)%int2d, loop) 
           CALL pup_g(arr(n)%perimeter, loop) 
           CALL pup_g(arr(n)%calculated, loop) 
-
 
 !############################################################################################
 !############################################################################################
@@ -226,6 +224,8 @@ DO worker_id = 1, proc_count-1
     END DO
   END IF
 END DO
+
+
 
 END SUBROUTINE run_gather
 
@@ -310,23 +310,20 @@ DO loop = 1,3
   END IF
 
   ! LOOP OVER ELEMENTS IN ARR
-  print *,"SIZE ", size(arr, 1) 
-      dppos = 1
-    lpos = 1
+  dppos = 1
+  lpos = 1
   DO n = 1, size(arr, 1)
     IF(loop .EQ. 2)THEN
       ecounter = ecounter + 1
     END IF
 !############################################################################################
 !############################################################################################
-
           CALL pup_b(arr(n)%sides, loop) 
           CALL pup_b(arr(n)%lengths, loop) 
           CALL pup_b(arr(n)%int1d, loop) 
           CALL pup_b(arr(n)%int2d, loop) 
           CALL pup_b(arr(n)%perimeter, loop) 
           CALL pup_b(arr(n)%calculated, loop) 
-
 
 !############################################################################################
 !############################################################################################
@@ -351,8 +348,7 @@ DO loop = 1,3
     ALLOCATE(blogical(1:bheader(3)))
     bint = 0
     bdp = 0.0D0
-    blogical = .TRUE.    
-    print *, bheader(:)   
+    blogical = .TRUE.     
   END IF
 
   ! SEND BUFFER HEADER TO ROOT      
@@ -362,7 +358,6 @@ DO loop = 1,3
 
   ! ON WORKER: ALLOCATE BUFFERS
   IF((proc_id .NE. 0) .AND. (loop .EQ. 1))THEN
-    print *, bheader(:)
     CALL deallocate_arrays()
     ALLOCATE(bint(1:bheader(1)))
     ALLOCATE(bdp(1:bheader(2)))
@@ -457,22 +452,25 @@ SUBROUTINE pup_g_int_3(int_in, loop)
 INTEGER(kind=StandardInteger), INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:) :: int_in
 INTEGER(kind=StandardInteger) :: loop
 INTEGER(kind=StandardInteger) :: n
-INTEGER(kind=StandardInteger) :: a, b, rows, cols
+INTEGER(kind=StandardInteger) :: a, b, rows, cols, tsize
 !###########################################################################
 IF (loop .eq. 1 .AND. proc_id .NE. 0) THEN
   kcount = kcount + 4
   intcount = intcount + SIZE(int_in, 1) * SIZE(int_in, 2)
 ELSE IF (loop .eq. 2 .AND. proc_id .NE. 0) THEN
+  rows = SIZE(int_in, 1)
+  cols = SIZE(int_in, 2)
+  tsize = rows * cols
   ! STORE KEY
   bint(kpos) = -1 * ipos                                    ! Key start
-  bint(kpos + 1) = (ipos + SIZE(int_in, 1) * SIZE(int_in, 2) - 1)   ! Key end
-  bint(kpos + 2) = SIZE(int_in, 1)                     ! Dim size
-  bint(kpos + 3) = SIZE(int_in, 2)                     ! Dim size
+  bint(kpos + 1) = (ipos + tsize - 1)   ! Key end
+  bint(kpos + 2) = rows                     ! Dim size
+  bint(kpos + 3) = cols                     ! Dim size
   kpos = kpos + 4
   ! STORE DATA
-  DO n = 1, SIZE(int_in, 2)
-    bint(ipos:ipos + SIZE(int_in, 1) - 1) = int_in(:, n)
-    ipos = ipos + SIZE(int_in, 1)
+  DO n = 1, cols
+    bint(ipos:ipos + rows - 1) = int_in(:, n)
+    ipos = ipos + rows
   END DO  
 ELSE IF (loop .eq. 3 .AND. proc_id .EQ. 0) THEN  
   ! KEYS
@@ -566,23 +564,26 @@ SUBROUTINE pup_g_dp_3(dp_in, loop)
 REAL(kind=DoubleReal), INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:) :: dp_in
 INTEGER(kind=StandardInteger) :: loop
 INTEGER(kind=StandardInteger) :: n
-INTEGER(kind=StandardInteger) :: a, b, rows, cols
+INTEGER(kind=StandardInteger) :: a, b, rows, cols, tsize
 !###########################################################################
 IF (loop .eq. 1 .AND. proc_id .NE. 0) THEN
   kcount = kcount + 4
   dpcount = dpcount + SIZE(dp_in, 1) * SIZE(dp_in, 2)
 ELSE IF (loop .eq. 2 .AND. proc_id .NE. 0) THEN
   ! STORE KEY
+  rows = SIZE(dp_in, 1)
+  cols = SIZE(dp_in, 2)
+  tsize = rows * cols
   bint(kpos) = -1 * dppos                                    ! Key start
-  bint(kpos + 1) = (dppos + SIZE(dp_in, 1) * SIZE(dp_in, 2) - 1)   ! Key end
-  bint(kpos + 2) = SIZE(dp_in, 1)                     ! Dim size
-  bint(kpos + 3) = SIZE(dp_in, 2)                     ! Dim size
-  kpos = kpos + 4
+  bint(kpos + 1) = dppos + tsize - 1   ! Key end
+  bint(kpos + 2) = rows                     ! Dim size
+  bint(kpos + 3) = cols                     ! Dim size
+  kpos = kpos + 4 
   ! STORE DATA
-  DO n = 1, SIZE(dp_in, 1)
-    bdp(dppos:dppos + SIZE(dp_in, 2) - 1) = dp_in(n, :)
-    dppos = dppos + SIZE(dp_in, 2)
-  END DO   
+  DO n = 1, cols
+    bdp(dppos:dppos + rows - 1) = dp_in(:, n)
+    dppos = dppos + rows
+  END DO     
 ELSE IF (loop .eq. 3 .AND. proc_id .EQ. 0) THEN  
   ! KEYS
   a = abs(bint(kpos))
@@ -596,10 +597,10 @@ ELSE IF (loop .eq. 3 .AND. proc_id .EQ. 0) THEN
   END IF
   ALLOCATE(dp_in(1:rows, 1:cols))
   ! UNPACK
-  DO n = 1,cols
-    dp_in(:,n) = bdp(a:a+rows-1)
-    a = a + rows
-  END DO
+  DO n = 1, cols
+    dp_in(:, n) = bdp(a:a+rows-1)
+    a = a + rows    
+  END DO   
 END IF
 END SUBROUTINE pup_g_dp_3
 
@@ -787,22 +788,25 @@ SUBROUTINE pup_b_int_3(int_in, loop)
 INTEGER(kind=StandardInteger), INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:) :: int_in
 INTEGER(kind=StandardInteger) :: loop
 INTEGER(kind=StandardInteger) :: n
-INTEGER(kind=StandardInteger) :: a, b, rows, cols
+INTEGER(kind=StandardInteger) :: a, b, rows, cols, tsize
 !###########################################################################
 IF (loop .eq. 1 .AND. proc_id .EQ. 0) THEN
   kcount = kcount + 4
   intcount = intcount + SIZE(int_in, 1) * SIZE(int_in, 2)
 ELSE IF (loop .eq. 2 .AND. proc_id .EQ. 0) THEN
+  rows = SIZE(int_in, 1)
+  cols = SIZE(int_in, 2)
+  tsize = rows * cols
   ! STORE KEY
   bint(kpos) = -1 * ipos                                    ! Key start
   bint(kpos + 1) = (ipos + SIZE(int_in, 1) * SIZE(int_in, 2) - 1)   ! Key end
-  bint(kpos + 2) = SIZE(int_in, 1)                     ! Dim size
-  bint(kpos + 3) = SIZE(int_in, 2)                     ! Dim size
+  bint(kpos + 2) = rows                     ! Dim size
+  bint(kpos + 3) = cols                     ! Dim size
   kpos = kpos + 4
   ! STORE DATA
-  DO n = 1, SIZE(int_in, 2)
-    bint(ipos:ipos + SIZE(int_in, 1) - 1) = int_in(:, n)
-    ipos = ipos + SIZE(int_in, 1)
+  DO n = 1, cols
+    bint(ipos:ipos + rows - 1) = int_in(:, n)
+    ipos = ipos + rows
   END DO  
 ELSE IF (loop .eq. 3 .AND. proc_id .NE. 0) THEN  
   ! KEYS
@@ -866,14 +870,15 @@ IF (loop .eq. 1 .AND. proc_id .EQ. 0) THEN
   kcount = kcount + 3
   dpcount = dpcount + SIZE(dp_in, 1)
 ELSE IF (loop .eq. 2 .AND. proc_id .EQ. 0) THEN
+  rows = SIZE(dp_in, 1)
   ! STORE KEY
   bint(kpos) = dppos                                    ! Key start
-  bint(kpos + 1) = -1 * (dppos + SIZE(dp_in, 1) - 1)   ! Key end
-  bint(kpos + 2) = SIZE(dp_in, 1)                     ! Dim size
+  bint(kpos + 1) = -1 * (dppos + rows - 1)   ! Key end
+  bint(kpos + 2) = rows                     ! Dim size
   kpos = kpos + 3
   ! STORE DATA
-  bdp(dppos:dppos + SIZE(dp_in, 1) - 1) = dp_in(:)
-  dppos = dppos + SIZE(dp_in, 1)  
+  bdp(dppos:dppos + rows - 1) = dp_in(:)
+  dppos = dppos + rows  
 ELSE IF (loop .eq. 3 .AND. proc_id .NE. 0) THEN  
   ! KEYS
   a = abs(bint(kpos))
@@ -896,22 +901,25 @@ SUBROUTINE pup_b_dp_3(dp_in, loop)
 REAL(kind=DoubleReal), INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:) :: dp_in
 INTEGER(kind=StandardInteger) :: loop
 INTEGER(kind=StandardInteger) :: n
-INTEGER(kind=StandardInteger) :: a, b, rows, cols
+INTEGER(kind=StandardInteger) :: a, b, rows, cols, tsize
 !###########################################################################
 IF (loop .eq. 1 .AND. proc_id .EQ. 0) THEN
   kcount = kcount + 4
   dpcount = dpcount + SIZE(dp_in, 1) * SIZE(dp_in, 2)
 ELSE IF (loop .eq. 2 .AND. proc_id .EQ. 0) THEN
   ! STORE KEY
+  rows = SIZE(dp_in, 1)
+  cols = SIZE(dp_in, 2)
+  tsize = rows * cols
   bint(kpos) = -1 * dppos                                    ! Key start
-  bint(kpos + 1) = (dppos + SIZE(dp_in, 1) * SIZE(dp_in, 2) - 1)   ! Key end
-  bint(kpos + 2) = SIZE(dp_in, 1)                     ! Dim size
-  bint(kpos + 3) = SIZE(dp_in, 2)                     ! Dim size
+  bint(kpos + 1) = (dppos + tsize - 1)      ! Key end
+  bint(kpos + 2) = rows                     ! Dim size
+  bint(kpos + 3) = cols                     ! Dim size
   kpos = kpos + 4
   ! STORE DATA
-  DO n = 1, SIZE(dp_in, 1)
-    bdp(dppos:dppos + SIZE(dp_in, 2) - 1) = dp_in(n, :)
-    dppos = dppos + SIZE(dp_in, 2)
+  DO n = 1, cols
+    bdp(dppos:dppos + rows - 1) = dp_in(:, n)
+    dppos = dppos + rows
   END DO   
 ELSE IF (loop .eq. 3 .AND. proc_id .NE. 0) THEN  
   ! KEYS
@@ -1060,7 +1068,8 @@ IF (ALLOCATED(blogical)) THEN
 END IF
 END SUBROUTINE deallocate_arrays
 
+
+
+
 END MODULE mpi_udgb
-
-
 

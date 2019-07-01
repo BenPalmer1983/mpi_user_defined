@@ -11,6 +11,12 @@ INTEGER(kind=StandardInteger), ALLOCATABLE, DIMENSION(:) :: int1d
 INTEGER(kind=StandardInteger), ALLOCATABLE, DIMENSION(:,:) :: int2d
 REAL(kind=DoubleReal) :: perimeter
 LOGICAL :: calculated = .FALSE.
+REAL(kind=DoubleReal), ALLOCATABLE, DIMENSION(:,:) :: coords1
+REAL(kind=DoubleReal), ALLOCATABLE, DIMENSION(:,:) :: coords2
+REAL(kind=DoubleReal), ALLOCATABLE, DIMENSION(:,:) :: matrix1
+
+
+REAL(kind=DoubleReal), ALLOCATABLE, DIMENSION(:,:) :: enddp
 END TYPE tshape
 
 END MODULE shape_type
